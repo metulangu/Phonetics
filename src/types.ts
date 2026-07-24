@@ -32,13 +32,29 @@ export interface PhonemeGroup {
 }
 
 export type PlayMode =
+  | 'm1_en_word'
+  | 'm2_tr_word'
+  | 'm3_en_sentence'
+  | 'm4_tr_sentence'
+  | 'm5_1_2'
+  | 'm6_1_3'
+  | 'm7_1_4'
+  | 'm8_2_3'
+  | 'm9_2_4'
+  | 'm10_3_4'
+  | 'm11_1_2_3'
+  | 'm12_1_2_4'
+  | 'm13_1_3_4'
+  | 'm14_2_3_4'
+  | 'm15_1_2_3_4'
   | 'english_only'
   | 'translation_only'
   | 'sentence_only'
+  | 'sentence_trans_only'
   | 'english_then_translation'
   | 'english_then_sentence'
-  | 'full_sequence'
-  | 'english_twice';
+  | 'sentence_en_then_trans'
+  | 'full_sequence';
 
 export interface VoiceSettings {
   englishVoiceURI: string;
@@ -47,6 +63,7 @@ export interface VoiceSettings {
   pitch: number; // 0.5 to 1.5
   volume: number; // 0 to 1
   playMode: PlayMode;
+  repeatCount: number; // 1 to 10
   autoDelaySeconds: number; // delay between words (0 to 5s)
   targetLanguage: string; // 'tr' | 'es' | 'de' | 'fr' | 'it' | 'ru' | 'ar' | 'ja'
 }

@@ -49,9 +49,18 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
   useEffect(() => {
     let isMounted = true;
     async function loadTranslations() {
-      const missingWords = words.filter(
-        (w) => (!w.translation || (typeof w.translation === 'object' && !w.translation[targetLang])) && !dynamicTranslations[`${w.id}_${targetLang}`]
-      );
+      if (targetLang === 'en') return;
+
+      const missingWords = words.filter((w) => {
+        if (dynamicTranslations[`${w.id}_${targetLang}`]) return false;
+        if (targetLang === 'tr') {
+          return !w.translation;
+        }
+        if (w.translation && typeof w.translation === 'object' && w.translation[targetLang]) {
+          return false;
+        }
+        return true;
+      });
 
       if (missingWords.length === 0) return;
 
@@ -119,15 +128,20 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
         const isFav = favorites.includes(item.id);
         const isExpanded = expandedSentenceId === item.id;
 
-        const translationText =
-          (typeof item.translation === 'string'
-            ? item.translation
-            : item.translation?.[targetLang]) ||
-          dynamicTranslations[`${item.id}_${targetLang}`] ||
-          (item.translation && typeof item.translation === 'object'
-            ? item.translation['tr'] || Object.values(item.translation)[0]
-            : '') ||
-          '...';
+        let translationText = '';
+        if (targetLang === 'en') {
+          translationText = 'Direct Learning';
+        } else if (typeof item.translation === 'string' && targetLang === 'tr') {
+          translationText = item.translation;
+        } else if (item.translation && typeof item.translation === 'object' && item.translation[targetLang]) {
+          translationText = item.translation[targetLang];
+        } else if (dynamicTranslations[`${item.id}_${targetLang}`]) {
+          translationText = dynamicTranslations[`${item.id}_${targetLang}`];
+        } else if (targetLang === 'tr' && item.translation && typeof item.translation === 'object' && item.translation['tr']) {
+          translationText = item.translation['tr'];
+        } else {
+          translationText = '...';
+        }
 
         return (
           <div

@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS: VoiceSettings = {
   pitch: 1.0,
   volume: 1.0,
   playMode: 'english_then_translation',
+  repeatCount: 1,
   autoDelaySeconds: 1.0,
   targetLanguage: '', // Nothing selected initially
 };
@@ -237,12 +238,37 @@ export default function App() {
 
       const langCode = voiceSettings.targetLanguage || 'tr';
       const playMode = voiceSettings.playMode;
+      const repeatCount = Math.max(1, Math.min(10, voiceSettings.repeatCount || 1));
 
       try {
-        // Fetch Translation dynamically if missing
-        let transText = (wordItem.translation && typeof wordItem.translation === 'object' ? wordItem.translation[langCode] || wordItem.translation['en'] || '' : '') || '';
-        if (!transText) {
+        // Fetch Translation dynamically if missing for target language
+        let transText = '';
+        if (langCode === 'en') {
+          transText = 'Direct Learning';
+        } else if (typeof wordItem.translation === 'string' && langCode === 'tr') {
+          transText = wordItem.translation;
+        } else if (wordItem.translation && typeof wordItem.translation === 'object' && wordItem.translation[langCode]) {
+          transText = wordItem.translation[langCode];
+        } else if (langCode === 'tr' && wordItem.translation && typeof wordItem.translation === 'object' && wordItem.translation['tr']) {
+          transText = wordItem.translation['tr'];
+        }
+
+        if (!transText && langCode !== 'en') {
           transText = await translateText(wordItem.word, langCode);
+        }
+
+        // Sentence Translation
+        let sentenceTransText = '';
+        if (wordItem.exampleSentence && langCode !== 'en') {
+          if (wordItem.sentenceTranslation && typeof wordItem.sentenceTranslation === 'object' && wordItem.sentenceTranslation[langCode]) {
+            sentenceTransText = wordItem.sentenceTranslation[langCode];
+          } else if (langCode === 'tr' && wordItem.sentenceTranslation && typeof wordItem.sentenceTranslation === 'object' && wordItem.sentenceTranslation['tr']) {
+            sentenceTransText = wordItem.sentenceTranslation['tr'];
+          }
+
+          if (!sentenceTransText) {
+            sentenceTransText = await translateText(wordItem.exampleSentence, langCode);
+          }
         }
 
         const speakEn = () =>
@@ -270,33 +296,87 @@ export default function App() {
           return Promise.resolve();
         };
 
+        const speakSentenceTrans = () => {
+          if (sentenceTransText) {
+            return speakText(sentenceTransText, langCode, voiceSettings.translationVoiceURI, {
+              rate: voiceSettings.rate,
+              pitch: voiceSettings.pitch,
+              volume: voiceSettings.volume,
+            });
+          }
+          return Promise.resolve();
+        };
+
         const waitDelay = () =>
           new Promise((res) => setTimeout(res, (voiceSettings.autoDelaySeconds || 0.8) * 1000));
 
-        if (playMode === 'english_only') {
-          await speakEn();
-        } else if (playMode === 'translation_only') {
-          await speakTrans();
-        } else if (playMode === 'sentence_only') {
-          await speakSentence();
-        } else if (playMode === 'english_then_translation') {
-          await speakEn();
-          await waitDelay();
-          await speakTrans();
-        } else if (playMode === 'english_then_sentence') {
-          await speakEn();
-          await waitDelay();
-          await speakSentence();
-        } else if (playMode === 'full_sequence') {
-          await speakEn();
-          await waitDelay();
-          await speakTrans();
-          await waitDelay();
-          await speakSentence();
-        } else if (playMode === 'english_twice') {
-          await speakEn();
-          await waitDelay();
-          await speakEn();
+        const playParts = async (parts: (1 | 2 | 3 | 4)[]) => {
+          for (let idx = 0; idx < parts.length; idx++) {
+            const part = parts[idx];
+            if (part === 1) await speakEn();
+            else if (part === 2) await speakTrans();
+            else if (part === 3) await speakSentence();
+            else if (part === 4) await speakSentenceTrans();
+
+            if (idx < parts.length - 1) {
+              await waitDelay();
+            }
+          }
+        };
+
+        const getPartsForMode = (mode: PlayMode): (1 | 2 | 3 | 4)[] => {
+          switch (mode) {
+            case 'm1_en_word':
+            case 'english_only':
+              return [1];
+            case 'm2_tr_word':
+            case 'translation_only':
+              return [2];
+            case 'm3_en_sentence':
+            case 'sentence_only':
+              return [3];
+            case 'm4_tr_sentence':
+            case 'sentence_trans_only':
+              return [4];
+            case 'm5_1_2':
+            case 'english_then_translation':
+              return [1, 2];
+            case 'm6_1_3':
+            case 'english_then_sentence':
+              return [1, 3];
+            case 'm7_1_4':
+              return [1, 4];
+            case 'm8_2_3':
+              return [2, 3];
+            case 'm9_2_4':
+              return [2, 4];
+            case 'm10_3_4':
+            case 'sentence_en_then_trans':
+              return [3, 4];
+            case 'm11_1_2_3':
+              return [1, 2, 3];
+            case 'm12_1_2_4':
+              return [1, 2, 4];
+            case 'm13_1_3_4':
+              return [1, 3, 4];
+            case 'm14_2_3_4':
+              return [2, 3, 4];
+            case 'm15_1_2_3_4':
+            case 'full_sequence':
+              return [1, 2, 3, 4];
+            default:
+              return [1, 2];
+          }
+        };
+
+        const currentParts = getPartsForMode(playMode);
+
+        for (let iteration = 0; iteration < repeatCount; iteration++) {
+          await playParts(currentParts);
+
+          if (iteration < repeatCount - 1) {
+            await waitDelay();
+          }
         }
       } catch (err) {
         console.error('Speech error:', err);

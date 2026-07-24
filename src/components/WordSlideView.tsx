@@ -71,27 +71,67 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, total, currentWord, onIndexChange, onPlayWord]);
 
+  const [dynamicSentenceTranslation, setDynamicSentenceTranslation] = useState<string>('');
+
   // Dynamic Translation fetch for current slide card
   useEffect(() => {
     let isMounted = true;
     if (!currentWord) return;
 
-    const existingTrans = typeof currentWord.translation === 'string'
-      ? currentWord.translation
-      : (currentWord.translation?.[targetLang] || (currentWord.translation ? Object.values(currentWord.translation)[0] : ''));
-    if (existingTrans) {
-      setDynamicTranslation(existingTrans);
+    if (targetLang === 'en') {
+      setDynamicTranslation('Direct Learning');
       setLoadingTranslation(false);
       return;
     }
 
-    setLoadingTranslation(true);
-    translateText(currentWord.word, targetLang).then((res) => {
-      if (isMounted) {
-        setDynamicTranslation(res);
-        setLoadingTranslation(false);
+    // Check if translation exists for the specific target language
+    let existingTrans = '';
+    if (typeof currentWord.translation === 'string') {
+      if (targetLang === 'tr') existingTrans = currentWord.translation;
+    } else if (currentWord.translation && typeof currentWord.translation === 'object') {
+      if (currentWord.translation[targetLang]) {
+        existingTrans = currentWord.translation[targetLang];
+      } else if (targetLang === 'tr' && currentWord.translation['tr']) {
+        existingTrans = currentWord.translation['tr'];
       }
-    });
+    }
+
+    if (existingTrans) {
+      setDynamicTranslation(existingTrans);
+      setLoadingTranslation(false);
+    } else {
+      setLoadingTranslation(true);
+      translateText(currentWord.word, targetLang).then((res) => {
+        if (isMounted) {
+          setDynamicTranslation(res);
+          setLoadingTranslation(false);
+        }
+      });
+    }
+
+    // Sentence Translation
+    if (currentWord.exampleSentence && targetLang !== 'en') {
+      let existingSentence = '';
+      if (currentWord.sentenceTranslation && typeof currentWord.sentenceTranslation === 'object') {
+        if (currentWord.sentenceTranslation[targetLang]) {
+          existingSentence = currentWord.sentenceTranslation[targetLang];
+        } else if (targetLang === 'tr' && currentWord.sentenceTranslation['tr']) {
+          existingSentence = currentWord.sentenceTranslation['tr'];
+        }
+      }
+
+      if (existingSentence) {
+        setDynamicSentenceTranslation(existingSentence);
+      } else {
+        translateText(currentWord.exampleSentence, targetLang).then((res) => {
+          if (isMounted) {
+            setDynamicSentenceTranslation(res);
+          }
+        });
+      }
+    } else {
+      setDynamicSentenceTranslation('');
+    }
 
     return () => {
       isMounted = false;
@@ -328,12 +368,12 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
                   <div className="text-sm md:text-base font-medium italic">
                     "{currentWord.exampleSentence}"
                   </div>
-                  {currentWord.sentenceTranslation &&
-                    currentWord.sentenceTranslation[targetLang] && (
-                      <div className="text-xs opacity-80">
-                        → {currentWord.sentenceTranslation[targetLang]}
-                      </div>
-                    )}
+                  {dynamicSentenceTranslation && (
+                    <div className="text-xs opacity-80 flex items-center gap-1.5 font-medium">
+                      <span>→</span>
+                      <span>{dynamicSentenceTranslation}</span>
+                    </div>
+                  )}
                 </div>
 
                 <button
