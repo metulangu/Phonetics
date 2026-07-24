@@ -1,0 +1,6 @@
+{
+  "name": "Phonetic Pronunciation & TTS Practice",
+  "description": "Interactive English phonetic symbols and vocabulary reader with free browser SpeechSynthesis TTS, column auto-play, translation, and custom voice controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
