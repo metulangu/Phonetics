@@ -224,7 +224,7 @@ export const IpaChecklistModal: React.FC<IpaChecklistModalProps> = ({ isOpen, on
                     type="button"
                     onClick={() =>
                       handleCopy(
-                        `Ana IPA: ${group.symbol}\nAçıklama: ${group.descriptionEn}`,
+                        `Hedef IPA Sembolü: /${group.symbol}/\nTanım: ${group.descriptionEn}\n\nKRİTİK ZORUNLULUK:\n1. Seçilen kelimelerin okunuşunda KESİNLİKLE /${group.symbol}/ IPA sesi yer almalıdır.\n2. Sıklık sırasına göre 1K (yoksa 2K, 3K...) seviyelerinden en yaygın kullanılan kelimeleri seç.`,
                         mainKey
                       )
                     }
@@ -265,7 +265,13 @@ export const IpaChecklistModal: React.FC<IpaChecklistModalProps> = ({ isOpen, on
                       const patternKey = `pattern_${group.id}_${pat.spelling}`;
                       const isPatChecked = !!ticks[patternKey];
 
-                      const copyPromptText = `Ana IPA: ${group.symbol}\nDesen: "${pat.spelling}"`;
+                      const copyPromptText = `Hedef IPA Sembolü: /${group.symbol}/
+Okuma / Desen (Pattern): "${pat.spelling}"
+
+KRİTİK FONE TIK ZORUNLULUK:
+1. Verilen "${pat.spelling}" harfi/deseni, seçilen kelimelerin IPA transkripsiyonunda KESİNLİKLE Hedef IPA Sembolünü /${group.symbol}/ üretmelidir!
+2. Sadece "${pat.spelling}" harfini içeren fakat telaffuzunda /${group.symbol}/ sesi bulunmayan kelimeleri KESİNLİKLE LİSTEYE DAHİL ETME! (Örn: Hedef IPA /ə/ ve Desen 'a' ise, 'about' /əˈbaʊt/ geçerlidir; fakat 'cat' /kæt/ veya 'make' /meɪk/ kesinlikle yasaktır).
+3. Kelimeleri en yaygın kullanılanlar arasından 1K (yoksa 2K, 3K...) sırasına göre seç.`;
 
                       return (
                         <div
