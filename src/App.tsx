@@ -106,6 +106,14 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
 
+  // Auto-shuffle seed for main IPA entry
+  const [mainIpaShuffleSeed, setMainIpaShuffleSeed] = useState<number>(Date.now());
+
+  // Re-shuffle whenever selectedGroup changes
+  useEffect(() => {
+    setMainIpaShuffleSeed(Date.now());
+  }, [selectedGroup]);
+
   // Sync theme
   useEffect(() => {
     const root = document.documentElement;
@@ -191,12 +199,11 @@ export default function App() {
       });
     }
 
-    // Apply Random Shuffle if requested
-    if (isShuffled && shuffledSeed) {
-      // Deterministic shuffle based on seed
+    // Auto-shuffle on main IPA entry (when selectedPattern is null and no search query)
+    if (!selectedPattern && !searchQuery.trim() && !showFavoritesOnly) {
       const arr = [...list];
       let m = arr.length, t, i;
-      let seed = shuffledSeed;
+      let seed = mainIpaShuffleSeed;
       const pseudoRandom = () => {
         const x = Math.sin(seed++) * 10000;
         return x - Math.floor(x);
@@ -211,13 +218,13 @@ export default function App() {
     }
 
     return list;
-  }, [allGroupWords, selectedPattern, searchQuery, isShuffled, shuffledSeed]);
+  }, [allGroupWords, selectedPattern, searchQuery, showFavoritesOnly, mainIpaShuffleSeed]);
 
   // Reset slide index when list changes
   useEffect(() => {
     setSlideIndex(0);
     setAutoPlayIndex(0);
-  }, [selectedGroup, selectedPattern, showFavoritesOnly, isShuffled, shuffledSeed]);
+  }, [selectedGroup, selectedPattern, showFavoritesOnly]);
 
   // Progressive background pre-translation chunking (preloading 5 words ahead)
   useEffect(() => {
@@ -230,15 +237,27 @@ export default function App() {
     translateWordsBatch(toTranslate, targetLang);
   }, [slideIndex, displayedWords, voiceSettings.targetLanguage]);
 
+  // Audio Speech Session Management (for instant cancellation)
+  const speechSessionRef = useRef<number>(0);
+
+  const stopSpeechHandler = useCallback(() => {
+    speechSessionRef.current++;
+    stopSpeech();
+    setActiveSpeakingWordId(null);
+  }, []);
+
   // Speak Handler
   const handlePlayWord = useCallback(
-    async (wordItem: WordItem) => {
+    async (wordItem: WordItem, overrideMode?: 'english' | 'translation' | 'both') => {
+      stopSpeechHandler();
+      const currentSession = speechSessionRef.current;
       setActiveSpeakingWordId(wordItem.id);
-      stopSpeech();
 
       const langCode = voiceSettings.targetLanguage || 'tr';
-      const playMode = voiceSettings.playMode;
-      const repeatCount = Math.max(1, Math.min(10, voiceSettings.repeatCount || 1));
+      const playMode = overrideMode
+        ? (overrideMode === 'english' ? 'm1_en_word' : overrideMode === 'translation' ? 'm2_tr_word' : 'm5_1_2')
+        : voiceSettings.playMode;
+      const repeatCount = overrideMode ? 1 : Math.max(1, Math.min(10, voiceSettings.repeatCount || 1));
 
       try {
         // Fetch Translation dynamically if missing for target language
@@ -257,6 +276,8 @@ export default function App() {
           transText = await translateText(wordItem.word, langCode);
         }
 
+        if (speechSessionRef.current !== currentSession) return;
+
         // Sentence Translation
         let sentenceTransText = '';
         if (wordItem.exampleSentence && langCode !== 'en') {
@@ -271,53 +292,66 @@ export default function App() {
           }
         }
 
-        const speakEn = () =>
-          speakText(wordItem.word, 'en-US', voiceSettings.englishVoiceURI, {
+        if (speechSessionRef.current !== currentSession) return;
+
+        const speakEn = async () => {
+          if (speechSessionRef.current !== currentSession) return;
+          await speakText(wordItem.word, 'en-US', voiceSettings.englishVoiceURI, {
             rate: voiceSettings.rate,
             pitch: voiceSettings.pitch,
             volume: voiceSettings.volume,
           });
-
-        const speakTrans = () =>
-          speakText(transText, langCode, voiceSettings.translationVoiceURI, {
-            rate: voiceSettings.rate,
-            pitch: voiceSettings.pitch,
-            volume: voiceSettings.volume,
-          });
-
-        const speakSentence = () => {
-          if (wordItem.exampleSentence) {
-            return speakText(wordItem.exampleSentence, 'en-US', voiceSettings.englishVoiceURI, {
-              rate: voiceSettings.rate,
-              pitch: voiceSettings.pitch,
-              volume: voiceSettings.volume,
-            });
-          }
-          return Promise.resolve();
         };
 
-        const speakSentenceTrans = () => {
-          if (sentenceTransText) {
-            return speakText(sentenceTransText, langCode, voiceSettings.translationVoiceURI, {
-              rate: voiceSettings.rate,
-              pitch: voiceSettings.pitch,
-              volume: voiceSettings.volume,
-            });
-          }
-          return Promise.resolve();
+        const speakTrans = async () => {
+          if (speechSessionRef.current !== currentSession) return;
+          await speakText(transText, langCode, voiceSettings.translationVoiceURI, {
+            rate: voiceSettings.rate,
+            pitch: voiceSettings.pitch,
+            volume: voiceSettings.volume,
+          });
+        };
+
+        const speakSentence = async () => {
+          if (speechSessionRef.current !== currentSession || !wordItem.exampleSentence) return;
+          await speakText(wordItem.exampleSentence, 'en-US', voiceSettings.englishVoiceURI, {
+            rate: voiceSettings.rate,
+            pitch: voiceSettings.pitch,
+            volume: voiceSettings.volume,
+          });
+        };
+
+        const speakSentenceTrans = async () => {
+          if (speechSessionRef.current !== currentSession || !sentenceTransText) return;
+          await speakText(sentenceTransText, langCode, voiceSettings.translationVoiceURI, {
+            rate: voiceSettings.rate,
+            pitch: voiceSettings.pitch,
+            volume: voiceSettings.volume,
+          });
         };
 
         const waitDelay = () =>
-          new Promise((res) => setTimeout(res, (voiceSettings.autoDelaySeconds || 0.8) * 1000));
+          new Promise((res) => {
+            const delayMs = (voiceSettings.autoDelaySeconds || 0.8) * 1000;
+            const start = Date.now();
+            const timer = setInterval(() => {
+              if (speechSessionRef.current !== currentSession || Date.now() - start >= delayMs) {
+                clearInterval(timer);
+                res(undefined);
+              }
+            }, 30);
+          });
 
         const playParts = async (parts: (1 | 2 | 3 | 4)[]) => {
           for (let idx = 0; idx < parts.length; idx++) {
+            if (speechSessionRef.current !== currentSession) break;
             const part = parts[idx];
             if (part === 1) await speakEn();
             else if (part === 2) await speakTrans();
             else if (part === 3) await speakSentence();
             else if (part === 4) await speakSentenceTrans();
 
+            if (speechSessionRef.current !== currentSession) break;
             if (idx < parts.length - 1) {
               await waitDelay();
             }
@@ -372,8 +406,10 @@ export default function App() {
         const currentParts = getPartsForMode(playMode);
 
         for (let iteration = 0; iteration < repeatCount; iteration++) {
+          if (speechSessionRef.current !== currentSession) break;
           await playParts(currentParts);
 
+          if (speechSessionRef.current !== currentSession) break;
           if (iteration < repeatCount - 1) {
             await waitDelay();
           }
@@ -381,22 +417,68 @@ export default function App() {
       } catch (err) {
         console.error('Speech error:', err);
       } finally {
-        setActiveSpeakingWordId(null);
+        if (speechSessionRef.current === currentSession) {
+          setActiveSpeakingWordId(null);
+        }
       }
     },
-    [voiceSettings]
+    [voiceSettings, stopSpeechHandler]
   );
 
-  // Speak Example Sentence explicitly
+  // Speak Example Sentence explicitly (with optional translation sequence)
   const handlePlaySentence = useCallback(
-    (sentence: string) => {
-      speakText(sentence, 'en-US', voiceSettings.englishVoiceURI, {
-        rate: voiceSettings.rate,
-        pitch: voiceSettings.pitch,
-        volume: voiceSettings.volume,
-      });
+    async (text: string, langCode: string = 'en-US', followUpTranslation?: { text: string; langCode: string }) => {
+      if (!text) return;
+      stopSpeechHandler();
+      const currentSession = speechSessionRef.current;
+      setActiveSpeakingWordId('sentence');
+
+      try {
+        await speakText(
+          text,
+          langCode,
+          langCode.startsWith('en') ? voiceSettings.englishVoiceURI : voiceSettings.translationVoiceURI,
+          {
+            rate: voiceSettings.rate,
+            pitch: voiceSettings.pitch,
+            volume: voiceSettings.volume,
+          }
+        );
+
+        if (speechSessionRef.current !== currentSession) return;
+
+        if (followUpTranslation && followUpTranslation.text) {
+          const delayMs = (voiceSettings.autoDelaySeconds || 0.6) * 1000;
+          const start = Date.now();
+          await new Promise((res) => {
+            const timer = setInterval(() => {
+              if (speechSessionRef.current !== currentSession || Date.now() - start >= delayMs) {
+                clearInterval(timer);
+                res(undefined);
+              }
+            }, 30);
+          });
+
+          if (speechSessionRef.current !== currentSession) return;
+
+          await speakText(
+            followUpTranslation.text,
+            followUpTranslation.langCode,
+            voiceSettings.translationVoiceURI,
+            {
+              rate: voiceSettings.rate,
+              pitch: voiceSettings.pitch,
+              volume: voiceSettings.volume,
+            }
+          );
+        }
+      } finally {
+        if (speechSessionRef.current === currentSession) {
+          setActiveSpeakingWordId(null);
+        }
+      }
     },
-    [voiceSettings]
+    [voiceSettings, stopSpeechHandler]
   );
 
   // Toggle Favorite
@@ -564,9 +646,9 @@ export default function App() {
         {/* Step 3: Slide & Practice Workspace */}
         {currentStep === 'slide' && (
           <div className="flex-1 flex flex-col items-center w-full">
-            {/* Active Pattern or Shuffle Banner */}
-            {selectedPattern ? (
-              <div className={`w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-2xs ${
+            {/* Active Pattern Filter Banner (Only shown in Column view, since Slide view has it integrated above card) */}
+            {viewMode !== 'slide' && selectedPattern ? (
+              <div className={`w-full max-w-4xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-2xs ${
                 theme === 'dark'
                   ? 'bg-indigo-950/70 border-indigo-800 text-indigo-200'
                   : 'bg-indigo-50/90 border-indigo-200 text-indigo-900'
@@ -597,43 +679,24 @@ export default function App() {
                   {t('clearPatternFilter')}
                 </button>
               </div>
-            ) : isShuffled ? (
-              <div className={`w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-2xs ${
-                theme === 'dark'
-                  ? 'bg-purple-950/70 border-purple-800 text-purple-200'
-                  : 'bg-purple-50/90 border-purple-200 text-purple-900'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <span className={theme === 'dark' ? 'text-purple-400 font-bold' : 'text-purple-600 font-bold'}>
-                    🎲 Shuffled Word List
-                  </span>
-                  <span className={theme === 'dark' ? 'text-slate-400 font-normal' : 'text-slate-500 font-normal'}>
-                    ({displayedWords.length} {t('wordCardsCount').toLowerCase()})
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShuffledSeed(Date.now())}
-                  className={`px-2.5 py-1 rounded-xl border font-bold transition-all shadow-2xs ${
-                    theme === 'dark'
-                      ? 'bg-slate-900 border-purple-800 text-purple-300 hover:bg-purple-600 hover:text-white'
-                      : 'bg-white border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white'
-                  }`}
-                >
-                  🔄 Reshuffle
-                </button>
-              </div>
             ) : null}
 
             {/* AutoPlay Bar */}
             <AutoPlayBar
               isAutoPlaying={isAutoPlaying}
               isPaused={isPaused}
+              activeSpeakingWordId={activeSpeakingWordId}
               currentIndex={slideIndex}
               totalWords={displayedWords.length}
               activeWord={displayedWords[slideIndex] || null}
               voiceSettings={voiceSettings}
               onUpdateSettings={(newS) => setVoiceSettings((p) => ({ ...p, ...newS }))}
-              onTogglePlayPause={() => setIsPaused(!isPaused)}
+              onTogglePlayPause={() => {
+                if (!isPaused) {
+                  stopSpeechHandler();
+                }
+                setIsPaused(!isPaused);
+              }}
               onStartAutoPlay={handleToggleAutoPlay}
               onPlayCurrentCard={() => {
                 if (displayedWords[slideIndex]) handlePlayWord(displayedWords[slideIndex]);
@@ -659,6 +722,8 @@ export default function App() {
                 onPlayWord={handlePlayWord}
                 onPlaySentence={handlePlaySentence}
                 onToggleFavorite={handleToggleFavorite}
+                selectedPattern={selectedPattern}
+                onClearPattern={() => setSelectedPattern(null)}
                 theme={theme}
               />
             ) : (

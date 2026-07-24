@@ -16,6 +16,7 @@ import { t } from '../utils/i18n';
 interface AutoPlayBarProps {
   isAutoPlaying: boolean;
   isPaused: boolean;
+  activeSpeakingWordId?: string | null;
   currentIndex: number;
   totalWords: number;
   activeWord: WordItem | null;
@@ -33,6 +34,7 @@ interface AutoPlayBarProps {
 export const AutoPlayBar: React.FC<AutoPlayBarProps> = ({
   isAutoPlaying,
   isPaused,
+  activeSpeakingWordId,
   currentIndex,
   totalWords,
   activeWord,
@@ -47,6 +49,7 @@ export const AutoPlayBar: React.FC<AutoPlayBarProps> = ({
   theme,
 }) => {
   const isLight = theme === 'light';
+  const isCardSpeaking = !!activeSpeakingWordId;
 
   const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === voiceSettings.targetLanguage);
   const targetCode = voiceSettings.targetLanguage ? voiceSettings.targetLanguage.toUpperCase() : 'TARGET';
@@ -118,6 +121,14 @@ export const AutoPlayBar: React.FC<AutoPlayBarProps> = ({
                 title={isPaused ? t('resume') : t('pause')}
               >
                 {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+              </button>
+            ) : isCardSpeaking ? (
+              <button
+                onClick={onStop}
+                className="p-1.5 md:p-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition-all shadow-md shadow-amber-400/20 animate-pulse"
+                title={t('stop')}
+              >
+                <Pause className="w-3.5 h-3.5 fill-current" />
               </button>
             ) : (
               <button

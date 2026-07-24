@@ -85,7 +85,7 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
           }`}>
             <Layers className={`w-4 h-4 shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
             <span>
-              <strong>{totalSpellingPatterns}+</strong> Spelling Patterns (Graphemes)
+              <strong>{totalSpellingPatterns}</strong> Spelling Patterns (Graphemes)
             </span>
           </div>
         </div>

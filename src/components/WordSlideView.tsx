@@ -1,16 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Volume2,
-  Play,
   Star,
   ChevronLeft,
   ChevronRight,
-  Globe,
-  Sparkles,
-  VolumeX,
-  BookOpen,
-  ArrowRight,
-  ArrowLeft,
   RefreshCw,
 } from 'lucide-react';
 import { WordItem, VoiceSettings } from '../types';
@@ -25,8 +18,10 @@ interface WordSlideViewProps {
   favorites: string[];
   voiceSettings: VoiceSettings;
   onPlayWord: (word: WordItem, mode?: 'english' | 'translation' | 'both') => void;
-  onPlaySentence: (sentence: string) => void;
+  onPlaySentence: (sentence: string, langCode?: string, followUp?: { text: string; langCode: string }) => void;
   onToggleFavorite: (wordId: string) => void;
+  selectedPattern?: string | null;
+  onClearPattern?: () => void;
   theme: 'light' | 'dark';
 }
 
@@ -40,6 +35,8 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
   onPlayWord,
   onPlaySentence,
   onToggleFavorite,
+  selectedPattern,
+  onClearPattern,
   theme,
 }) => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -179,53 +176,53 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
   const isActivePlaying = activeWordId === currentWord.id;
 
   return (
-    <div className="flex flex-col items-center justify-center py-4 px-2 w-full max-w-4xl mx-auto">
-      {/* Slide Navigation Header Bar */}
-      <div className="w-full flex items-center justify-between mb-4 px-2">
-        <div className="flex items-center gap-2">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-bold font-mono border ${
-              isLight
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                : 'bg-indigo-950/60 text-indigo-300 border-indigo-800'
-            }`}
-          >
-            Slide {currentIndex + 1} / {total}
-          </span>
-          {currentWord.level && (
-            <span
-              className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${
-                isLight
-                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-              }`}
-            >
-              {currentWord.level}
+    <div className="flex flex-col items-center justify-center py-2 px-2 w-full max-w-4xl mx-auto">
+      {/* Top Info Header */}
+      <div className="w-full flex items-center justify-between mb-2 px-2 text-xs opacity-85">
+        <div className="flex items-center gap-2 min-w-0">
+          {selectedPattern ? (
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-[11px]">
+                Pattern:
+              </span>
+              <span className="font-mono font-extrabold px-1.5 py-0.5 rounded border text-[11px] bg-indigo-100/80 dark:bg-indigo-900/80 border-indigo-200 dark:border-indigo-800">
+                {selectedPattern}
+              </span>
+              <span className="opacity-60 text-[11px] font-mono">({total} words)</span>
+              {onClearPattern && (
+                <button
+                  onClick={onClearPattern}
+                  className="text-[11px] text-rose-500 hover:underline font-bold ml-1"
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+          ) : (
+            <span className="font-semibold text-[11px] text-slate-500 dark:text-slate-400">
+              {langConfig.flag} {langConfig.name} Learning • {total} Words
             </span>
           )}
         </div>
 
-        {/* Slide Counter & Keyboard Tip */}
-        <div className="hidden sm:flex items-center gap-2 text-xs opacity-75">
-          <span
-            className={`px-2 py-0.5 rounded border text-[11px] font-mono ${
-              isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-800 border-slate-700'
-            }`}
-          >
-            ← → Use Arrow Keys
-          </span>
-        </div>
+        <span
+          className={`hidden sm:inline-block px-2 py-0.5 rounded border text-[11px] font-mono shrink-0 ${
+            isLight ? 'bg-slate-100 border-slate-300 text-slate-600' : 'bg-slate-800 border-slate-700 text-slate-400'
+          }`}
+        >
+          ← → Keyboard Arrows
+        </span>
       </div>
 
-      {/* Main Slide Card with Horizontal Slide Container */}
+      {/* Main Slide Card */}
       <div
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className="relative w-full overflow-hidden select-none"
+        className="relative w-full select-none"
       >
         <div
-          className={`relative rounded-3xl border transition-all duration-300 p-8 md:p-12 shadow-xl ${
+          className={`relative rounded-3xl border transition-all duration-300 p-6 sm:p-8 shadow-xl flex flex-col justify-between min-h-[380px] sm:min-h-[420px] ${
             isActivePlaying
               ? isLight
                 ? 'bg-indigo-600 text-white border-indigo-500 ring-4 ring-indigo-100 shadow-indigo-200'
@@ -235,229 +232,303 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
               : 'bg-slate-900 border-slate-800 text-slate-100 shadow-black/40'
           }`}
         >
-          {/* Top Card Controls */}
-          <div className="flex items-center justify-between mb-6">
-            <span
-              className={`text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-lg ${
-                isActivePlaying
-                  ? 'bg-white/20 text-white'
-                  : isLight
-                  ? 'bg-slate-100 text-indigo-600'
-                  : 'bg-slate-800 text-indigo-400'
-              }`}
-            >
-              {currentWord.phonemeSymbol ? `Phoneme: ${currentWord.phonemeSymbol}` : 'Word Card'}
-            </span>
-
-            <button
-              onClick={() => onToggleFavorite(currentWord.id)}
-              className={`p-3 rounded-2xl border transition-all ${
-                isFav
-                  ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
-                  : isActivePlaying
-                  ? 'bg-white/10 text-white border-white/20 hover:bg-white/20'
-                  : isLight
-                  ? 'bg-slate-100 text-slate-400 border-slate-200 hover:text-amber-500'
-                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-amber-400'
-              }`}
-              title={isFav ? 'Remove from Favorites' : 'Add to Favorites'}
-            >
-              <Star className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
-            </button>
-          </div>
-
-          {/* Center Content: Large Word & IPA */}
-          <div className="text-center my-6">
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-2">
-              {currentWord.word}
-            </h2>
-            <div className="inline-block px-4 py-1.5 rounded-xl font-mono text-xl md:text-2xl font-bold tracking-wider mb-4 opacity-90">
+          {/* Top Corner 1: Level / Phoneme Badge (Top Left) */}
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+            {currentWord.level && (
               <span
-                className={
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
                   isActivePlaying
-                    ? 'text-amber-300'
+                    ? 'bg-white/20 border-white/30 text-white'
                     : isLight
-                    ? 'text-indigo-600'
-                    : 'text-indigo-300'
-                }
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : 'bg-indigo-950/80 text-indigo-300 border-indigo-800'
+                }`}
               >
-                {currentWord.ipa}
+                {currentWord.level}
               </span>
-            </div>
-
-            {/* Translation Display */}
-            <div className="mt-3 flex items-center justify-center gap-2">
-              <span className="text-xl md:text-3xl font-semibold italic opacity-95">
-                {loadingTranslation ? (
-                  <span className="inline-flex items-center gap-2 text-sm">
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Translating...
-                  </span>
-                ) : (
-                  dynamicTranslation || '...'
-                )}
+            )}
+            {currentWord.phonemeSymbol && (
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${
+                  isActivePlaying
+                    ? 'bg-white/20 border-white/30 text-white'
+                    : isLight
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-amber-950/60 text-amber-300 border-amber-800'
+                }`}
+              >
+                /{currentWord.phonemeSymbol}/
               </span>
-              <span className="text-xs px-2 py-0.5 rounded font-bold uppercase opacity-75 border border-current">
-                {langConfig.flag} {langConfig.code}
-              </span>
-            </div>
+            )}
           </div>
 
-          {/* Sound Action Buttons Bar */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-            {/* Primary Big English Speaker Button */}
-            <button
-              onClick={() => onPlayWord(currentWord, 'english')}
-              className={`px-6 py-3.5 rounded-2xl font-bold text-base flex items-center gap-2.5 transition-all shadow-lg active:scale-95 ${
-                isActivePlaying
-                  ? 'bg-amber-400 text-slate-950 shadow-amber-400/30 ring-4 ring-amber-300/40 animate-pulse'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
-              }`}
-            >
-              <Play className="w-5 h-5 fill-current" />
-              <span>Speak English</span>
-            </button>
+          {/* Top Corner 2: Favorite Star Button (Top Right) */}
+          <button
+            onClick={() => onToggleFavorite(currentWord.id)}
+            className={`absolute top-4 right-4 z-10 p-2.5 rounded-2xl border transition-all active:scale-90 ${
+              isFav
+                ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md ring-2 ring-amber-300/50'
+                : isActivePlaying
+                ? 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                : isLight
+                ? 'bg-slate-100 text-slate-400 border-slate-200 hover:text-amber-500 hover:bg-amber-50'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-amber-400 hover:bg-slate-700'
+            }`}
+            title={isFav ? 'Remove from Favorites' : 'Add to Favorites'}
+          >
+            <Star className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
+          </button>
 
-            {/* Read Both Button */}
-            <button
-              onClick={() => onPlayWord(currentWord, 'both')}
-              className={`px-5 py-3.5 rounded-2xl font-semibold text-sm flex items-center gap-2 transition-all border ${
-                isActivePlaying
-                  ? 'bg-white/20 text-white border-white/40'
-                  : isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-              }`}
-            >
-              <Globe className="w-4 h-4 text-indigo-500" />
-              <span>EN + {langConfig.name}</span>
-            </button>
-
-            {/* Read Translation Only */}
-            <button
-              onClick={() => onPlayWord(currentWord, 'translation')}
-              className={`px-4 py-3.5 rounded-2xl font-medium text-sm flex items-center gap-2 transition-all border ${
-                isActivePlaying
-                  ? 'bg-white/10 text-white border-white/30'
-                  : isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-              }`}
-              title="Speak Translation Only"
-            >
-              <Volume2 className="w-4 h-4 text-emerald-500" />
-              <span>Speak Translation</span>
-            </button>
-          </div>
-
-          {/* Example Sentence Section */}
-          {currentWord.exampleSentence && (
+          {/* Main Card Content (Pushed higher up) */}
+          <div className="pt-8 pb-4 flex flex-col items-center justify-center text-center">
+            {/* English Word (Interactive Play on Click) */}
             <div
-              className={`mt-8 pt-6 border-t ${
-                isActivePlaying
-                  ? 'border-white/20 bg-white/5 -mx-8 -mb-8 p-6 rounded-b-3xl'
-                  : isLight
-                  ? 'border-slate-200 bg-slate-50 -mx-8 -mb-8 p-6 rounded-b-3xl'
-                  : 'border-slate-800 bg-slate-950/60 -mx-8 -mb-8 p-6 rounded-b-3xl'
-              }`}
+              onClick={() => onPlayWord(currentWord, 'english')}
+              className="group cursor-pointer flex items-center justify-center gap-3 my-1 transition-transform hover:scale-105"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-wider font-bold text-indigo-500">
-                    Example Sentence
-                  </div>
-                  <div className="text-sm md:text-base font-medium italic">
-                    "{currentWord.exampleSentence}"
-                  </div>
-                  {dynamicSentenceTranslation && (
-                    <div className="text-xs opacity-80 flex items-center gap-1.5 font-medium">
-                      <span>→</span>
-                      <span>{dynamicSentenceTranslation}</span>
-                    </div>
-                  )}
-                </div>
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-normal leading-tight">
+                {currentWord.word}
+              </h2>
+              <button
+                className={`p-2.5 rounded-2xl transition-all ${
+                  isActivePlaying
+                    ? 'bg-amber-400 text-slate-950 shadow-md animate-pulse'
+                    : isLight
+                    ? 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white shadow-2xs'
+                    : 'bg-slate-800 text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white shadow-2xs'
+                }`}
+                title="Listen to English Word"
+              >
+                <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
 
-                <button
-                  onClick={() => onPlaySentence(currentWord.exampleSentence!)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
-                    isLight
-                      ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'
-                      : 'bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800'
+            {/* IPA & Translation Stacked Below */}
+            <div className="mt-3 flex flex-col items-center gap-2">
+              {/* IPA Badge */}
+              <div
+                onClick={() => onPlayWord(currentWord, 'english')}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full font-mono text-base sm:text-lg font-bold tracking-wide border cursor-pointer transition-all shadow-2xs ${
+                  isActivePlaying
+                    ? 'bg-amber-400/20 border-amber-300/50 text-amber-200'
+                    : isLight
+                    ? 'bg-indigo-50/90 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                    : 'bg-indigo-950/80 border-indigo-800 text-indigo-300 hover:bg-indigo-900'
+                }`}
+                title="Phonetic IPA"
+              >
+                <span>/{currentWord.ipa.replace(/^\/|\/$/g, '')}/</span>
+              </div>
+
+              {/* Translation with Speaker Button */}
+              <div
+                onClick={() => onPlayWord(currentWord, 'translation')}
+                className={`group/tr cursor-pointer inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-2xl border transition-all ${
+                  isActivePlaying
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : isLight
+                    ? 'bg-emerald-50/80 hover:bg-emerald-100/80 border-emerald-200/80 text-emerald-800'
+                    : 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-800/80 text-emerald-200'
+                }`}
+              >
+                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                  {loadingTranslation ? (
+                    <span className="inline-flex items-center gap-2 text-sm font-normal">
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Translating...
+                    </span>
+                  ) : (
+                    dynamicTranslation || '...'
+                  )}
+                </span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase border ${
+                    isActivePlaying
+                      ? 'border-white/40 bg-white/20 text-white'
+                      : isLight
+                      ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+                      : 'border-emerald-700 bg-emerald-900/80 text-emerald-200'
                   }`}
                 >
+                  {langConfig.flag} {langConfig.code}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlayWord(currentWord, 'translation');
+                  }}
+                  className={`p-1.5 rounded-xl transition-all ${
+                    isActivePlaying
+                      ? 'bg-amber-400 text-slate-950 shadow-sm'
+                      : isLight
+                      ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700'
+                      : 'bg-emerald-500 text-slate-950 shadow-2xs hover:bg-emerald-400'
+                  }`}
+                  title={`Listen to ${langConfig.name}`}
+                >
                   <Volume2 className="w-4 h-4" />
-                  <span>Speak Sentence</span>
                 </button>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Previous Slide Button (Left Arrow) */}
-        <button
-          onClick={() => onIndexChange(Math.max(0, currentIndex - 1))}
-          disabled={currentIndex === 0}
-          className={`absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full border shadow-xl transition-all ${
-            currentIndex === 0
-              ? 'opacity-30 cursor-not-allowed bg-slate-200 text-slate-400 border-transparent'
-              : isLight
-              ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-slate-300'
-              : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
-          }`}
-          title="Previous Slide (Left Arrow)"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
+            {/* Example Sentence Section (Clicking container plays EN + TR sequence) */}
+            {currentWord.exampleSentence && (
+              <div
+                onClick={() =>
+                  onPlaySentence(
+                    currentWord.exampleSentence!,
+                    'en-US',
+                    dynamicSentenceTranslation ? { text: dynamicSentenceTranslation, langCode: langConfig.code } : undefined
+                  )
+                }
+                className={`mt-5 p-5 sm:p-6 rounded-2xl border w-full max-w-2xl sm:max-w-3xl cursor-pointer transition-all hover:scale-[1.01] text-left space-y-3 shadow-2xs ${
+                  isActivePlaying
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : isLight
+                    ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-900'
+                    : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-100'
+                }`}
+              >
+                {/* English Sentence Line */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <span
+                      className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded border uppercase mt-0.5 ${
+                        isActivePlaying
+                          ? 'bg-white/20 border-white/30 text-white'
+                          : isLight
+                          ? 'bg-indigo-100 border-indigo-200 text-indigo-900'
+                          : 'bg-indigo-950 border-indigo-800 text-indigo-200'
+                      }`}
+                    >
+                      EN
+                    </span>
+                    <p className="text-base sm:text-lg font-bold leading-snug tracking-tight">
+                      "{currentWord.exampleSentence}"
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPlaySentence(currentWord.exampleSentence!, 'en-US');
+                    }}
+                    className={`p-2 rounded-xl shrink-0 transition-all shadow-2xs ${
+                      isLight
+                        ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        : 'bg-indigo-500 text-slate-950 hover:bg-indigo-400'
+                    }`}
+                    title="Listen to English Sentence"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                </div>
 
-        {/* Next Slide Button (Right Arrow) */}
-        <button
-          onClick={() => onIndexChange(Math.min(total - 1, currentIndex + 1))}
-          disabled={currentIndex === total - 1}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full border shadow-xl transition-all ${
-            currentIndex === total - 1
-              ? 'opacity-30 cursor-not-allowed bg-slate-200 text-slate-400 border-transparent'
-              : isLight
-              ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500 shadow-indigo-200'
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500'
-          }`}
-          title="Next Slide (Right Arrow)"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </button>
-      </div>
+                {/* Translated Sentence Line */}
+                {dynamicSentenceTranslation && (
+                  <div className="flex items-start justify-between gap-3 pt-2.5 border-t border-slate-200 dark:border-slate-700/60">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <span
+                        className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded border uppercase mt-0.5 ${
+                          isActivePlaying
+                            ? 'bg-white/20 border-white/30 text-white'
+                            : isLight
+                            ? 'bg-emerald-100 border-emerald-200 text-emerald-900'
+                            : 'bg-emerald-950 border-emerald-800 text-emerald-200'
+                        }`}
+                      >
+                        {langConfig.code.toUpperCase()}
+                      </span>
+                      <p className="text-sm sm:text-base font-semibold leading-relaxed opacity-95">
+                        {dynamicSentenceTranslation}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlaySentence(dynamicSentenceTranslation, langConfig.code);
+                      }}
+                      className={`p-2 rounded-xl shrink-0 transition-all shadow-2xs ${
+                        isLight
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                      }`}
+                      title={`Listen to ${langConfig.name} Sentence`}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-      {/* Progress Dots / Slider Bar */}
-      <div className="w-full mt-6 px-4">
-        <div className="flex items-center justify-between text-xs font-semibold mb-2">
-          <button
-            onClick={() => onIndexChange(Math.max(0, currentIndex - 1))}
-            disabled={currentIndex === 0}
-            className="flex items-center gap-1 hover:underline disabled:opacity-40"
+          {/* Integrated Bottom Bar Inside Card (Progress, Counter & Navigation) */}
+          <div
+            className={`mt-4 pt-4 border-t flex flex-col gap-2.5 ${
+              isActivePlaying
+                ? 'border-white/20'
+                : isLight
+                ? 'border-slate-100'
+                : 'border-slate-800'
+            }`}
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Previous
-          </button>
+            {/* Nav Buttons + Counter */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => onIndexChange(Math.max(0, currentIndex - 1))}
+                disabled={currentIndex === 0}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all ${
+                  currentIndex === 0
+                    ? 'opacity-30 cursor-not-allowed border-transparent'
+                    : isActivePlaying
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                    : isLight
+                    ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                    : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
 
-          <span className="font-mono text-xs opacity-75">
-            {currentIndex + 1} / {total}
-          </span>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold font-mono border ${
+                  isActivePlaying
+                    ? 'bg-amber-400 text-slate-950 border-amber-300'
+                    : isLight
+                    ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                    : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                }`}
+              >
+                {currentIndex + 1} / {total}
+              </span>
 
-          <button
-            onClick={() => onIndexChange(Math.min(total - 1, currentIndex + 1))}
-            disabled={currentIndex === total - 1}
-            className="flex items-center gap-1 hover:underline disabled:opacity-40"
-          >
-            Next <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+              <button
+                onClick={() => onIndexChange(Math.min(total - 1, currentIndex + 1))}
+                disabled={currentIndex === total - 1}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all ${
+                  currentIndex === total - 1
+                    ? 'opacity-30 cursor-not-allowed border-transparent'
+                    : isActivePlaying
+                    ? 'bg-amber-400 text-slate-950 border-amber-300 hover:bg-amber-300'
+                    : isLight
+                    ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-500 shadow-sm'
+                    : 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-500'
+                }`}
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Progress Bar Slider */}
+            <input
+              type="range"
+              min={0}
+              max={total - 1}
+              value={currentIndex}
+              onChange={(e) => onIndexChange(Number(e.target.value))}
+              className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200/80 dark:bg-slate-700 rounded-lg overflow-hidden"
+            />
+          </div>
         </div>
-
-        {/* Interactive Slide Track */}
-        <input
-          type="range"
-          min={0}
-          max={total - 1}
-          value={currentIndex}
-          onChange={(e) => onIndexChange(Number(e.target.value))}
-          className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-200 rounded-lg overflow-hidden"
-        />
       </div>
     </div>
   );

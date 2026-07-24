@@ -33,13 +33,21 @@ export function getVoicesForLang(langCode: string): SpeechSynthesisVoice[] {
 
 export function findVoice(uri: string | undefined, langCode: string): SpeechSynthesisVoice | null {
   const voices = getAvailableVoices();
+  const normalizedLang = (langCode || 'en').toLowerCase().replace('_', '-');
+  const targetPrefix = normalizedLang.split('-')[0];
+
   if (uri) {
     const match = voices.find((v) => v.voiceURI === uri);
-    if (match) return match;
+    if (match) {
+      const matchLangPrefix = match.lang.toLowerCase().replace('_', '-').split('-')[0];
+      if (matchLangPrefix === targetPrefix) {
+        return match;
+      }
+    }
   }
 
   const langVoices = voices.filter((v) =>
-    v.lang.toLowerCase().replace('_', '-').startsWith(langCode.toLowerCase())
+    v.lang.toLowerCase().replace('_', '-').startsWith(targetPrefix)
   );
 
   const googleVoice = langVoices.find((v) => v.name.toLowerCase().includes('google'));
