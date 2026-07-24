@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Volume2,
-  Search,
   Sun,
   Moon,
   LayoutGrid,
@@ -63,10 +62,14 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div>
-              <span className="text-sm font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400 block leading-tight">
+              <span className={`text-sm font-extrabold tracking-tight block leading-tight ${
+                isLight ? 'text-indigo-600' : 'text-indigo-400'
+              }`}>
                 {t('appTitle')}
               </span>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block leading-tight">
+              <span className={`text-[11px] font-medium block leading-tight ${
+                isLight ? 'text-slate-500' : 'text-slate-400'
+              }`}>
                 {t('appSubTitle')}
               </span>
             </div>
@@ -76,7 +79,11 @@ export const Header: React.FC<HeaderProps> = ({
           {currentStep === 'slide' && (
             <button
               onClick={() => onGoToStep('category')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/80 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-all shadow-xs"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                isLight
+                  ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                  : 'bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 border border-indigo-800'
+              }`}
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">{t('backToGroups')}</span>
@@ -86,7 +93,11 @@ export const Header: React.FC<HeaderProps> = ({
           {currentStep === 'category' && (
             <button
               onClick={() => onGoToStep('language')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-xs"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">{t('changeLang')}</span>
@@ -94,42 +105,20 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Center: Search Bar (when in Category or Slide view) */}
-        {currentStep !== 'language' && (
-          <div className="relative w-full sm:w-56 md:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={t('searchPlaceholder')}
-              className={`w-full pl-9 pr-7 py-1.5 border rounded-xl text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                isLight
-                  ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-300 text-slate-900 placeholder-slate-400'
-                  : 'bg-slate-800 hover:bg-slate-800/80 border-slate-700 text-slate-100 placeholder-slate-400'
-              }`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => onSearchChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 hover:text-slate-200 bg-slate-700 px-1 py-0.5 rounded"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Right Controls: Theme Toggle & View Mode Switcher */}
         <div className="flex items-center gap-2">
           {/* Theme Switcher [ Light | Dark ] */}
-          <div className="flex items-center p-0.5 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+          <div className={`flex items-center p-0.5 rounded-xl border text-xs font-bold ${
+            isLight
+              ? 'bg-slate-100 border-slate-200'
+              : 'bg-slate-800/90 border-slate-700/80'
+          }`}>
             <button
               onClick={() => onToggleTheme('light')}
               className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 isLight
                   ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200'
-                  : 'text-slate-500 hover:text-slate-200'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
               title={t('whiteTheme')}
             >
@@ -140,8 +129,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onToggleTheme('dark')}
               className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 !isLight
-                  ? 'bg-slate-900 text-indigo-400 shadow-sm ring-1 ring-slate-700'
-                  : 'text-slate-500 hover:text-slate-200'
+                  ? 'bg-slate-900 text-indigo-300 shadow-sm ring-1 ring-slate-700'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
               title={t('darkTheme')}
             >
@@ -152,13 +141,19 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* View Mode Switcher in Slide view */}
           {currentStep === 'slide' && (
-            <div className="flex items-center p-0.5 rounded-xl border bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+            <div className={`flex items-center p-0.5 rounded-xl border text-xs font-bold ${
+              isLight
+                ? 'bg-slate-100 border-slate-200'
+                : 'bg-slate-800/90 border-slate-700/80'
+            }`}>
               <button
                 onClick={() => onToggleViewMode('slide')}
                 className={`px-2 py-1.5 rounded-lg flex items-center gap-1 transition-all ${
                   viewMode === 'slide'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    : isLight
+                    ? 'text-slate-500 hover:text-slate-800'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
                 title={t('slideView')}
               >
@@ -170,7 +165,9 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`px-2 py-1.5 rounded-lg flex items-center gap-1 transition-all ${
                   viewMode === 'column'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    : isLight
+                    ? 'text-slate-500 hover:text-slate-800'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
                 title={t('listView')}
               >

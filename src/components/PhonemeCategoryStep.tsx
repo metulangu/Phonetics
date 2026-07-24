@@ -11,6 +11,7 @@ interface PhonemeCategoryStepProps {
   onSelectFavorites: () => void;
   favoritesCount: number;
   theme: 'light' | 'dark';
+  searchQuery?: string;
 }
 
 export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
@@ -18,6 +19,7 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
   onSelectFavorites,
   favoritesCount,
   theme,
+  searchQuery = '',
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'vowels' | 'diphthongs' | 'consonants'>('all');
 
@@ -33,6 +35,33 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
   if (activeTab === 'vowels') displayedGroups = monophthongs;
   if (activeTab === 'diphthongs') displayedGroups = diphthongs;
   if (activeTab === 'consonants') displayedGroups = consonants;
+
+  if (searchQuery && searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    displayedGroups = displayedGroups.filter((g) => {
+      const symbolMatch = g.symbol.toLowerCase().includes(q);
+      const ipaMatch = g.ipa.toLowerCase().includes(q);
+      const exampleMatch = g.exampleWord.toLowerCase().startsWith(q);
+      const patternMatch = g.spellingPatterns?.some(
+        (p) => p.spelling.toLowerCase() === q || p.spelling.toLowerCase().includes(q)
+      );
+      const wordPatternMatch = g.words?.some(
+        (w) => w.spellingPattern?.toLowerCase() === q || w.word.toLowerCase().startsWith(q)
+      );
+
+      // Single character queries: match symbol, IPA, spelling pattern, word pattern or example/words starting with character
+      if (q.length === 1) {
+        return symbolMatch || ipaMatch || patternMatch || wordPatternMatch || exampleMatch;
+      }
+
+      const patternExampleMatch = g.spellingPatterns?.some(
+        (p) => p.examples.some((ex) => ex.toLowerCase().includes(q))
+      );
+      const descMatch = g.descriptionEn.toLowerCase().includes(q) || g.descriptionTr.toLowerCase().includes(q);
+      const fullExampleMatch = g.exampleWord.toLowerCase().includes(q);
+      return symbolMatch || ipaMatch || fullExampleMatch || descMatch || patternMatch || patternExampleMatch;
+    });
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto py-6 px-4">
@@ -126,10 +155,16 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
                   <span
                     className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
                       group.type === 'monophthongs'
-                        ? 'bg-sky-50 text-sky-700 border-sky-200/80 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-800'
+                        ? isLight
+                          ? 'bg-sky-50 text-sky-700 border-sky-200/80'
+                          : 'bg-sky-950/80 text-sky-300 border-sky-800'
                         : group.type === 'diphthongs'
-                        ? 'bg-purple-50 text-purple-700 border-purple-200/80 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800'
-                        : 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800'
+                        ? isLight
+                          ? 'bg-purple-50 text-purple-700 border-purple-200/80'
+                          : 'bg-purple-950/80 text-purple-300 border-purple-800'
+                        : isLight
+                        ? 'bg-amber-50 text-amber-700 border-amber-200/80'
+                        : 'bg-amber-950/80 text-amber-300 border-amber-800'
                     }`}
                   >
                     {group.type === 'monophthongs'
@@ -147,7 +182,7 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
                     className={`w-20 h-20 rounded-2xl font-mono text-4xl font-black flex items-center justify-center border shadow-xs transition-all duration-200 hover:scale-105 active:scale-95 ${
                       isLight
                         ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200/90 text-indigo-700 hover:border-indigo-400 hover:shadow-indigo-100'
-                        : 'bg-gradient-to-br from-indigo-950/90 to-slate-900 border-indigo-800/80 text-amber-300 hover:border-indigo-600 hover:shadow-indigo-950/50'
+                        : 'bg-gradient-to-br from-indigo-950/90 to-slate-900 border-indigo-800/80 text-indigo-200 hover:text-white hover:border-indigo-600 hover:shadow-indigo-950/50'
                     }`}
                     title={`${group.symbol} - ${t('viewAllWords')}`}
                   >
@@ -157,19 +192,27 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
 
                 {/* Full Description (No truncation) */}
                 <div className="text-center px-1 mb-4">
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                  <p className={`text-xs font-medium leading-relaxed ${
+                    isLight ? 'text-slate-600' : 'text-slate-200'
+                  }`}>
                     {descriptionText}
                   </p>
                 </div>
 
                 {/* Spelling Patterns (Graphemes) Section */}
                 {group.spellingPatterns && group.spellingPatterns.length > 0 && (
-                  <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className={`mt-4 pt-3.5 border-t ${
+                    isLight ? 'border-slate-100' : 'border-slate-800'
+                  }`}>
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                        isLight ? 'text-slate-500' : 'text-slate-300'
+                      }`}>
                         {t('spellingPatternsLabel')}
                       </span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-300'
+                      }`}>
                         {group.spellingPatterns.length} {t('patternsCount')}
                       </span>
                     </div>
@@ -183,7 +226,7 @@ export const PhonemeCategoryStep: React.FC<PhonemeCategoryStepProps> = ({
                           className={`min-w-[44px] h-11 px-3 rounded-xl border text-sm font-mono font-black transition-all duration-200 flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 ${
                             isLight
                               ? 'bg-gradient-to-br from-indigo-50/80 to-purple-50/80 border-indigo-200/80 text-indigo-700 hover:border-indigo-400 hover:bg-indigo-600 hover:text-white hover:shadow-sm'
-                              : 'bg-gradient-to-br from-indigo-950/70 to-slate-900 border-indigo-800/80 text-amber-300 hover:border-indigo-500 hover:bg-indigo-600 hover:text-white hover:shadow-sm'
+                              : 'bg-gradient-to-br from-indigo-950/70 to-slate-900 border-indigo-800/80 text-indigo-200 hover:border-indigo-500 hover:bg-indigo-600 hover:text-white hover:shadow-sm'
                           }`}
                           title={`Pattern: "${sp.spelling}" (${sp.examples.join(', ')})`}
                         >

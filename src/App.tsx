@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PHONEME_GROUPS } from './data/phonemesData';
 import { AppStep, PhonemeGroup, PlayMode, VoiceSettings, WordItem } from './types';
 import { speakText, stopSpeech } from './services/ttsService';
-import { translateText } from './services/translateService';
+import { translateText, translateWordsBatch } from './services/translateService';
 import { Header } from './components/Header';
 import { LanguageSelectionStep } from './components/LanguageSelectionStep';
 import { PhonemeCategoryStep } from './components/PhonemeCategoryStep';
@@ -136,6 +136,11 @@ export default function App() {
     localStorage.setItem('phonetic_custom_words', JSON.stringify(customWords));
   }, [customWords]);
 
+  // Scroll to top whenever step or selected group changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentStep, selectedGroup]);
+
   // Filter and Gather All Words
   const allGroupWords = React.useMemo(() => {
     if (showFavoritesOnly) {
@@ -166,12 +171,23 @@ export default function App() {
     // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (w) =>
-          w.word.toLowerCase().includes(q) ||
-          w.ipa.toLowerCase().includes(q) ||
-          (w.translation && w.translation.toLowerCase().includes(q))
-      );
+      list = list.filter((w) => {
+        const wordMatch = w.word ? w.word.toLowerCase().includes(q) : false;
+        const ipaMatch = w.ipa ? w.ipa.toLowerCase().includes(q) : false;
+        const symbolMatch = w.phonemeSymbol ? w.phonemeSymbol.toLowerCase().includes(q) : false;
+        const patternMatch = w.pattern ? w.pattern.toLowerCase().includes(q) : false;
+
+        let transMatch = false;
+        if (typeof w.translation === 'string') {
+          transMatch = (w.translation as string).toLowerCase().includes(q);
+        } else if (w.translation && typeof w.translation === 'object') {
+          transMatch = Object.values(w.translation).some(
+            (val) => typeof val === 'string' && val.toLowerCase().includes(q)
+          );
+        }
+
+        return wordMatch || ipaMatch || symbolMatch || patternMatch || transMatch;
+      });
     }
 
     // Apply Random Shuffle if requested
@@ -201,6 +217,17 @@ export default function App() {
     setSlideIndex(0);
     setAutoPlayIndex(0);
   }, [selectedGroup, selectedPattern, showFavoritesOnly, isShuffled, shuffledSeed]);
+
+  // Progressive background pre-translation chunking (preloading 5 words ahead)
+  useEffect(() => {
+    const targetLang = voiceSettings.targetLanguage;
+    if (!targetLang || targetLang === 'en' || displayedWords.length === 0) return;
+
+    const chunk = displayedWords.slice(slideIndex, slideIndex + 5);
+    const toTranslate = chunk.map((w) => ({ id: w.id, text: w.word }));
+
+    translateWordsBatch(toTranslate, targetLang);
+  }, [slideIndex, displayedWords, voiceSettings.targetLanguage]);
 
   // Speak Handler
   const handlePlayWord = useCallback(
@@ -431,6 +458,7 @@ export default function App() {
           <PhonemeCategoryStep
             selectedLanguageCode={voiceSettings.targetLanguage}
             onChangeLanguageRequest={() => setCurrentStep('language')}
+            searchQuery={searchQuery}
             onSelectGroup={(g, pattern, shuffle) => {
               setSelectedGroup(g);
               setSelectedPattern(pattern || null);
@@ -458,38 +486,58 @@ export default function App() {
           <div className="flex-1 flex flex-col items-center w-full">
             {/* Active Pattern or Shuffle Banner */}
             {selectedPattern ? (
-              <div className="w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200/90 dark:border-indigo-800 text-xs font-semibold text-indigo-900 dark:text-indigo-200 shadow-2xs">
+              <div className={`w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-2xs ${
+                theme === 'dark'
+                  ? 'bg-indigo-950/70 border-indigo-800 text-indigo-200'
+                  : 'bg-indigo-50/90 border-indigo-200 text-indigo-900'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                  <span className={theme === 'dark' ? 'text-indigo-400 font-bold' : 'text-indigo-600 font-bold'}>
                     {t('activePatternFilter')}:
                   </span>
-                  <span className="font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100 border border-indigo-300/60 dark:border-indigo-700">
+                  <span className={`font-mono font-extrabold px-2.5 py-0.5 rounded-lg border ${
+                    theme === 'dark'
+                      ? 'bg-indigo-900 text-indigo-100 border-indigo-700'
+                      : 'bg-indigo-200/80 text-indigo-900 border-indigo-300/60'
+                  }`}>
                     {selectedPattern}
                   </span>
-                  <span className="text-slate-500 dark:text-slate-400 font-normal">
+                  <span className={theme === 'dark' ? 'text-slate-400 font-normal' : 'text-slate-500 font-normal'}>
                     ({displayedWords.length} {t('wordCardsCount').toLowerCase()})
                   </span>
                 </div>
                 <button
                   onClick={() => setSelectedPattern(null)}
-                  className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-bold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-all shadow-2xs"
+                  className={`px-2.5 py-1 rounded-xl border font-bold transition-all shadow-2xs ${
+                    theme === 'dark'
+                      ? 'bg-slate-900 border-indigo-800 text-indigo-300 hover:bg-indigo-600 hover:text-white'
+                      : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-600 hover:text-white'
+                  }`}
                 >
                   {t('clearPatternFilter')}
                 </button>
               </div>
             ) : isShuffled ? (
-              <div className="w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-purple-50/90 dark:bg-purple-950/70 border border-purple-200/90 dark:border-purple-800 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-2xs">
+              <div className={`w-full max-w-xl mb-3 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border text-xs font-semibold shadow-2xs ${
+                theme === 'dark'
+                  ? 'bg-purple-950/70 border-purple-800 text-purple-200'
+                  : 'bg-purple-50/90 border-purple-200 text-purple-900'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-600 dark:text-purple-400 font-bold">
+                  <span className={theme === 'dark' ? 'text-purple-400 font-bold' : 'text-purple-600 font-bold'}>
                     🎲 Shuffled Word List
                   </span>
-                  <span className="text-slate-500 dark:text-slate-400 font-normal">
+                  <span className={theme === 'dark' ? 'text-slate-400 font-normal' : 'text-slate-500 font-normal'}>
                     ({displayedWords.length} {t('wordCardsCount').toLowerCase()})
                   </span>
                 </div>
                 <button
                   onClick={() => setShuffledSeed(Date.now())}
-                  className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-600 hover:text-white transition-all shadow-2xs"
+                  className={`px-2.5 py-1 rounded-xl border font-bold transition-all shadow-2xs ${
+                    theme === 'dark'
+                      ? 'bg-slate-900 border-purple-800 text-purple-300 hover:bg-purple-600 hover:text-white'
+                      : 'bg-white border-purple-200 text-purple-700 hover:bg-purple-600 hover:text-white'
+                  }`}
                 >
                   🔄 Reshuffle
                 </button>

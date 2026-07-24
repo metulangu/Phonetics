@@ -17,14 +17,13 @@ export const UI_TRANSLATIONS = {
     group: 'Group',
 
     // Step 1: Target Language Selection
-    step1Badge: 'Step 1 of 3: Select Target Language',
     step1Title: 'Select Translation & Speech Language',
-    step1Desc: 'Which language should English phonetic cards and words be translated and spoken in?',
-    searchLangPlaceholder: 'Search language (e.g., German, Spanish, French)...',
+    step1Desc: 'Choose your target translation language or select English (Monolingual) for direct phonetic learning.',
+    searchLangPlaceholder: 'Search language (e.g., German, Spanish, French, Turkish)...',
     googleTranslate: 'Google Translate',
     ttsAvailable: 'TTS Audio Supported',
     ttsOnlyText: 'Text Only',
-    startBtn: 'Start',
+    startBtn: 'Start Practice',
     selectBtn: 'Select',
 
     // Step 2: Phoneme Groups

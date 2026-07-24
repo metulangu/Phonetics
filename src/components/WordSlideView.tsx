@@ -76,7 +76,9 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
     let isMounted = true;
     if (!currentWord) return;
 
-    const existingTrans = currentWord.translation[targetLang];
+    const existingTrans = typeof currentWord.translation === 'string'
+      ? currentWord.translation
+      : (currentWord.translation?.[targetLang] || (currentWord.translation ? Object.values(currentWord.translation)[0] : ''));
     if (existingTrans) {
       setDynamicTranslation(existingTrans);
       setLoadingTranslation(false);
@@ -236,7 +238,7 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
                     ? 'text-amber-300'
                     : isLight
                     ? 'text-indigo-600'
-                    : 'text-amber-400'
+                    : 'text-indigo-300'
                 }
               >
                 {currentWord.ipa}

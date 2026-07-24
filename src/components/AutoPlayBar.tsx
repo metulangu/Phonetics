@@ -79,7 +79,7 @@ export const AutoPlayBar: React.FC<AutoPlayBarProps> = ({
                   <span>({currentIndex + 1} / {totalWords})</span>
                 </div>
                 <div className="text-xs font-bold truncate max-w-[180px]">
-                  {activeWord?.word} <span className="font-mono text-amber-400">{activeWord?.ipa}</span>
+                  {activeWord?.word} <span className="font-mono text-indigo-300">{activeWord?.ipa}</span>
                 </div>
               </div>
             </div>

@@ -50,7 +50,7 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
     let isMounted = true;
     async function loadTranslations() {
       const missingWords = words.filter(
-        (w) => !w.translation[targetLang] && !dynamicTranslations[`${w.id}_${targetLang}`]
+        (w) => (!w.translation || (typeof w.translation === 'object' && !w.translation[targetLang])) && !dynamicTranslations[`${w.id}_${targetLang}`]
       );
 
       if (missingWords.length === 0) return;
@@ -120,9 +120,13 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
         const isExpanded = expandedSentenceId === item.id;
 
         const translationText =
-          item.translation[targetLang] ||
+          (typeof item.translation === 'string'
+            ? item.translation
+            : item.translation?.[targetLang]) ||
           dynamicTranslations[`${item.id}_${targetLang}`] ||
-          item.translation['tr'] ||
+          (item.translation && typeof item.translation === 'object'
+            ? item.translation['tr'] || Object.values(item.translation)[0]
+            : '') ||
           '...';
 
         return (
@@ -184,7 +188,7 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
                           ? 'text-amber-200'
                           : isLight
                           ? 'text-indigo-600'
-                          : 'text-amber-300'
+                          : 'text-indigo-300'
                       }`}
                     >
                       {item.ipa}

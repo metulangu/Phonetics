@@ -152,7 +152,7 @@ export const PhonemeNav: React.FC<PhonemeNavProps> = ({
                       className={`w-10 h-8 rounded-lg font-mono text-sm font-bold flex items-center justify-center border ${
                         isLight
                           ? 'bg-slate-100 border-slate-200 text-indigo-700'
-                          : 'bg-slate-800 border-slate-700 text-amber-300'
+                          : 'bg-slate-800 border-slate-700 text-indigo-300'
                       }`}
                     >
                       {group.symbol}

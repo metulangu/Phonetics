@@ -1,6 +1,7 @@
 import { LanguageOption } from '../types';
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: 'en', name: 'English (Monolingual)', nativeName: 'Direct Learning - No Translation', flag: '🇺🇸', speechLang: 'en-US', hasTTS: true },
   { code: 'af', name: 'Afrikaans', nativeName: 'Afrikaans', flag: '🇿🇦', speechLang: 'af-ZA', hasTTS: true },
   { code: 'sq', name: 'Albanian', nativeName: 'Shqip', flag: '🇦🇱', speechLang: 'sq-AL', hasTTS: true },
   { code: 'am', name: 'Amharic', nativeName: 'አማርኛ', flag: '🇪🇹', speechLang: 'am-ET', hasTTS: false },
