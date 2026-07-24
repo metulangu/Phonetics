@@ -1,12 +1,13 @@
 import React from 'react';
-import { Volume2, Sparkles, BookOpen, Layers } from 'lucide-react';
+import { Volume2, Sparkles, BookOpen, Layers, CheckSquare } from 'lucide-react';
 import { t } from '../utils/i18n';
 
 interface FooterProps {
   theme: 'light' | 'dark';
+  onOpenIpaChecklist?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ theme }) => {
+export const Footer: React.FC<FooterProps> = ({ theme, onOpenIpaChecklist }) => {
   const isLight = theme === 'light';
 
   return (
@@ -51,13 +52,25 @@ export const Footer: React.FC<FooterProps> = ({ theme }) => {
           </div>
         </div>
 
-        {/* Bottom Copyright & Disclaimer */}
+        {/* Bottom Copyright & Disclaimer & IPA Link */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-500 gap-3">
           <p>
             © {new Date().getFullYear()} Phonetics Pro. All rights reserved. Interactive English Pronunciation & Phonetic Learning.
           </p>
+
+          {onOpenIpaChecklist && (
+            <button
+              type="button"
+              onClick={onOpenIpaChecklist}
+              className="px-3.5 py-1.5 rounded-xl border font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-all flex items-center gap-1.5 shrink-0"
+            >
+              <CheckSquare className="w-4 h-4 text-indigo-500" />
+              <span>📋 IPAs Pattern Checklist (Geçici)</span>
+            </button>
+          )}
         </div>
       </div>
     </footer>
   );
 };
+

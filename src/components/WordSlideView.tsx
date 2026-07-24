@@ -320,54 +320,68 @@ export const WordSlideView: React.FC<WordSlideViewProps> = ({
                 <span>/{currentWord.ipa.replace(/^\/|\/$/g, '')}/</span>
               </div>
 
-              {/* Translation with Speaker Button */}
-              <div
-                onClick={() => onPlayWord(currentWord, 'translation')}
-                className={`group/tr cursor-pointer inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-2xl border transition-all ${
-                  isActivePlaying
-                    ? 'bg-white/10 border-white/20 text-white'
-                    : isLight
-                    ? 'bg-emerald-50/80 hover:bg-emerald-100/80 border-emerald-200/80 text-emerald-800'
-                    : 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-800/80 text-emerald-200'
-                }`}
-              >
-                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                  {loadingTranslation ? (
-                    <span className="inline-flex items-center gap-2 text-sm font-normal">
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Translating...
-                    </span>
-                  ) : (
-                    dynamicTranslation || '...'
-                  )}
-                </span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase border ${
+              {/* Translation with Speaker Button (Hidden or Sleek Pill in Monolingual English mode) */}
+              {targetLang !== 'en' ? (
+                <div
+                  onClick={() => onPlayWord(currentWord, 'translation')}
+                  className={`group/tr cursor-pointer inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-2xl border transition-all ${
                     isActivePlaying
-                      ? 'border-white/40 bg-white/20 text-white'
+                      ? 'bg-white/10 border-white/20 text-white'
                       : isLight
-                      ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
-                      : 'border-emerald-700 bg-emerald-900/80 text-emerald-200'
+                      ? 'bg-emerald-50/80 hover:bg-emerald-100/80 border-emerald-200/80 text-emerald-800'
+                      : 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-800/80 text-emerald-200'
                   }`}
                 >
-                  {langConfig.flag} {langConfig.code}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPlayWord(currentWord, 'translation');
-                  }}
-                  className={`p-1.5 rounded-xl transition-all ${
+                  <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    {loadingTranslation ? (
+                      <span className="inline-flex items-center gap-2 text-sm font-normal">
+                        <RefreshCw className="w-4 h-4 animate-spin" /> Translating...
+                      </span>
+                    ) : (
+                      dynamicTranslation || '...'
+                    )}
+                  </span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase border ${
+                      isActivePlaying
+                        ? 'border-white/40 bg-white/20 text-white'
+                        : isLight
+                        ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+                        : 'border-emerald-700 bg-emerald-900/80 text-emerald-200'
+                    }`}
+                  >
+                    {langConfig.flag} {langConfig.code}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPlayWord(currentWord, 'translation');
+                    }}
+                    className={`p-1.5 rounded-xl transition-all ${
+                      isActivePlaying
+                        ? 'bg-amber-400 text-slate-950 shadow-sm'
+                        : isLight
+                        ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700'
+                        : 'bg-emerald-500 text-slate-950 shadow-2xs hover:bg-emerald-400'
+                    }`}
+                    title={`Listen to ${langConfig.name}`}
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-bold tracking-tight ${
                     isActivePlaying
-                      ? 'bg-amber-400 text-slate-950 shadow-sm'
+                      ? 'bg-white/10 border-white/20 text-white/90'
                       : isLight
-                      ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700'
-                      : 'bg-emerald-500 text-slate-950 shadow-2xs hover:bg-emerald-400'
+                      ? 'bg-slate-100/80 border-slate-200 text-slate-600'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400'
                   }`}
-                  title={`Listen to ${langConfig.name}`}
                 >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
+                  <span>🇺🇸 Monolingual English</span>
+                </div>
+              )}
             </div>
 
             {/* Example Sentence Section (Clicking container plays EN + TR sequence) */}

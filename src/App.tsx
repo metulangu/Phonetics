@@ -11,6 +11,7 @@ import { WordSlideView } from './components/WordSlideView';
 import { AutoPlayBar } from './components/AutoPlayBar';
 import { SettingsModal } from './components/SettingsModal';
 import { AddWordModal } from './components/AddWordModal';
+import { IpaChecklistModal } from './components/IpaChecklistModal';
 import { Footer } from './components/Footer';
 import { t } from './utils/i18n';
 
@@ -105,6 +106,7 @@ export default function App() {
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isIpaChecklistOpen, setIsIpaChecklistOpen] = useState<boolean>(false);
 
   // Auto-shuffle seed for main IPA entry
   const [mainIpaShuffleSeed, setMainIpaShuffleSeed] = useState<number>(Date.now());
@@ -743,7 +745,7 @@ export default function App() {
       </main>
 
       {/* Classic Footer */}
-      <Footer theme={theme} />
+      <Footer theme={theme} onOpenIpaChecklist={() => setIsIpaChecklistOpen(true)} />
 
       {/* Settings Modal */}
       <SettingsModal
@@ -760,6 +762,13 @@ export default function App() {
         onAddWord={handleAddWord}
         groups={PHONEME_GROUPS}
         currentGroupId={selectedGroup?.id || PHONEME_GROUPS[0].id}
+      />
+
+      {/* Temporary IPA Patterns Checklist Page/Modal */}
+      <IpaChecklistModal
+        isOpen={isIpaChecklistOpen}
+        onClose={() => setIsIpaChecklistOpen(false)}
+        theme={theme}
       />
     </div>
   );

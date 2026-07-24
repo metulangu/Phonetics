@@ -28,7 +28,12 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
     0
   );
 
-  const filteredLanguages = SUPPORTED_LANGUAGES.filter(
+  // Separate English Monolingual from other target languages
+  const otherLanguages = SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en').sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  const filteredLanguages = otherLanguages.filter(
     (lang) =>
       lang.name.toLowerCase().includes(search.toLowerCase()) ||
       (lang.nativeName && lang.nativeName.toLowerCase().includes(search.toLowerCase())) ||
@@ -46,6 +51,9 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
   };
 
   const handleStart = () => {
+    if (!selectedLanguageCode) {
+      onSelectLanguage('en');
+    }
     onProceed();
   };
 
@@ -91,19 +99,59 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
         </div>
       </div>
 
-      {/* Selected Language Floating / Sticky Action Bar */}
-      {selectedLangObj && (
-        <div className="w-full max-w-2xl mb-8 p-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white shadow-xl shadow-indigo-600/20 border border-indigo-500 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+      {/* Permanent Top English Monolingual Featured Card */}
+      <div
+        onClick={() => onSelectLanguage('en')}
+        className={`w-full max-w-2xl mb-8 p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl ${
+          selectedLanguageCode === 'en' || !selectedLanguageCode
+            ? 'bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white border-indigo-500 ring-4 ring-indigo-400/30'
+            : isLight
+            ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-950 border-indigo-200 hover:border-indigo-400'
+            : 'bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white border-indigo-800'
+        }`}
+      >
+        <div className="flex items-center gap-3 text-center sm:text-left">
+          <span className="text-4xl select-none shrink-0 drop-shadow-sm">🇺🇸</span>
+          <div>
+            <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-200">
+              SELECTED TARGET LANGUAGE
+            </div>
+            <div className="text-base sm:text-lg font-black tracking-tight flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <span>English (Monolingual)</span>
+              <span className="text-xs font-semibold opacity-90">
+                (Direct Learning - No Translation)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectLanguage('en');
+            onProceed();
+          }}
+          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white text-indigo-900 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-indigo-50 active:scale-95 transition-all shrink-0 cursor-pointer"
+        >
+          <span>Start Practice</span>
+          <ArrowRight className="w-4 h-4 text-indigo-700" />
+        </button>
+      </div>
+
+      {/* Selected Non-English Language Floating Bar */}
+      {selectedLangObj && selectedLangObj.code !== 'en' && (
+        <div className="w-full max-w-2xl mb-8 p-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-800 text-white shadow-xl border border-emerald-500 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-3 text-center sm:text-left">
             <span className="text-4xl select-none shrink-0 drop-shadow-sm">{selectedLangObj.flag}</span>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-indigo-200">
-                Selected Target Language
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-200">
+                Selected Translation Target
               </div>
               <div className="text-lg font-black tracking-tight flex items-center justify-center sm:justify-start gap-2">
                 <span>{selectedLangObj.name}</span>
                 {selectedLangObj.nativeName && (
-                  <span className="text-xs font-normal text-indigo-100 opacity-90">
+                  <span className="text-xs font-normal text-emerald-100 opacity-90">
                     ({selectedLangObj.nativeName})
                   </span>
                 )}
@@ -114,10 +162,10 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
           <button
             type="button"
             onClick={handleStart}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white text-indigo-900 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-indigo-50 active:scale-95 transition-all shrink-0 cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white text-emerald-900 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-emerald-50 active:scale-95 transition-all shrink-0 cursor-pointer"
           >
             <span>{t('startBtn')}</span>
-            <ArrowRight className="w-4 h-4 text-indigo-700" />
+            <ArrowRight className="w-4 h-4 text-emerald-700" />
           </button>
         </div>
       )}

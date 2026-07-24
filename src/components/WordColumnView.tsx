@@ -252,22 +252,36 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
                   /{item.ipa.replace(/^\/|\/$/g, '')}/
                 </span>
 
-                {/* Target Language Translation Badge */}
-                <div
-                  onClick={() => onPlayWord(item, 'translation')}
-                  className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-sm font-extrabold transition-all ${
-                    isActive
-                      ? 'bg-white/20 border-white/30 text-white'
-                      : isLight
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                      : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-200 hover:bg-emerald-900/80'
-                  }`}
-                  title={`Click to speak ${langConfig.name}`}
-                >
-                  <span className="text-xs">{langConfig.flag}</span>
-                  <span>{translationText}</span>
-                  <Volume2 className="w-3.5 h-3.5 opacity-80" />
-                </div>
+                {/* Target Language Translation Badge (Only if targetLang !== 'en') */}
+                {targetLang !== 'en' ? (
+                  <div
+                    onClick={() => onPlayWord(item, 'translation')}
+                    className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-sm font-extrabold transition-all ${
+                      isActive
+                        ? 'bg-white/20 border-white/30 text-white'
+                        : isLight
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                        : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-200 hover:bg-emerald-900/80'
+                    }`}
+                    title={`Click to speak ${langConfig.name}`}
+                  >
+                    <span className="text-xs">{langConfig.flag}</span>
+                    <span>{translationText}</span>
+                    <Volume2 className="w-3.5 h-3.5 opacity-80" />
+                  </div>
+                ) : (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border text-[11px] font-bold ${
+                      isActive
+                        ? 'bg-white/20 border-white/30 text-white'
+                        : isLight
+                        ? 'bg-slate-100 border-slate-200 text-slate-600'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    🇺🇸 Monolingual
+                  </span>
+                )}
 
                 {/* Level Badge */}
                 {item.level && (
@@ -287,21 +301,23 @@ export const WordColumnView: React.FC<WordColumnViewProps> = ({
 
               {/* Right Action Buttons */}
               <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                {/* EN + Translation Dual Speaker */}
-                <button
-                  onClick={() => onPlayWord(item, 'both')}
-                  className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
-                    isActive
-                      ? 'bg-white/20 border-white/30 text-white hover:bg-white/30'
-                      : isLight
-                      ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
-                      : 'bg-indigo-950/60 hover:bg-indigo-900/60 border-indigo-800 text-indigo-300'
-                  }`}
-                  title="Speak English + Translation in sequence"
-                >
-                  <Globe className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                  <span>EN + {langConfig.code.toUpperCase()}</span>
-                </button>
+                {/* EN + Translation Dual Speaker (Only if targetLang !== 'en') */}
+                {targetLang !== 'en' && (
+                  <button
+                    onClick={() => onPlayWord(item, 'both')}
+                    className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
+                      isActive
+                        ? 'bg-white/20 border-white/30 text-white hover:bg-white/30'
+                        : isLight
+                        ? 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
+                        : 'bg-indigo-950/60 hover:bg-indigo-900/60 border-indigo-800 text-indigo-300'
+                    }`}
+                    title="Speak English + Translation in sequence"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                    <span>EN + {langConfig.code.toUpperCase()}</span>
+                  </button>
+                )}
 
                 {/* Favorite Star button */}
                 <button
