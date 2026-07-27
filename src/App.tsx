@@ -103,6 +103,20 @@ export default function App() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [autoPlayIndex, setAutoPlayIndex] = useState<number>(0);
 
+  // Pattern and IPA Highlight Toggle
+  const [highlightEnabled, setHighlightEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('phonetic_highlight_enabled');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('phonetic_highlight_enabled', JSON.stringify(highlightEnabled));
+  }, [highlightEnabled]);
+
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -727,6 +741,9 @@ export default function App() {
                 selectedPattern={selectedPattern}
                 onClearPattern={() => setSelectedPattern(null)}
                 theme={theme}
+                highlightEnabled={highlightEnabled}
+                onToggleHighlight={() => setHighlightEnabled((prev) => !prev)}
+                groupSymbol={selectedGroup?.symbol}
               />
             ) : (
               <WordColumnView
@@ -738,6 +755,10 @@ export default function App() {
                 onPlaySentence={handlePlaySentence}
                 onToggleFavorite={handleToggleFavorite}
                 theme={theme}
+                highlightEnabled={highlightEnabled}
+                onToggleHighlight={() => setHighlightEnabled((prev) => !prev)}
+                groupSymbol={selectedGroup?.symbol}
+                selectedPattern={selectedPattern}
               />
             )}
           </div>
